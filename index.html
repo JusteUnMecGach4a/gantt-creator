@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Gantt Simple</title>
+    <!-- On utilise Frappe Gantt pour la simplicité -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; }
+        header { background: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .controls { padding: 15px; background: white; border-bottom: 1px solid #ddd; display: flex; gap: 10px; flex-wrap: wrap; }
+        #gantt-container { background: white; margin: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+        .btn-add { background: #27ae60; color: white; }
+        .btn-view { background: #3498db; color: white; }
+        button:hover { opacity: 0.8; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Créateur de Projet Rapide</h1>
+    <div id="project-info">Nouveau Projet</div>
+</header>
+
+<div class="controls">
+    <input type="text" id="task-name" placeholder="Nom de la tâche">
+    <input type="date" id="task-start" value="2023-10-01">
+    <input type="date" id="task-end" value="2023-10-05">
+    <button class="btn-add" onclick="addTask()">+ Ajouter</button>
+    <div style="margin-left: auto;">
+        <button class="btn-view" onclick="changeView('Day')">Jour</button>
+        <button class="btn-view" onclick="changeView('Week')">Semaine</button>
+        <button class="btn-view" onclick="changeView('Month')">Mois</button>
+    </div>
+</div>
+
+<div id="gantt-container">
+    <svg id="gantt"></svg>
+</div>
+
+<script>
+    // Données initiales
+    let tasks = [
+        {
+            id: 'Task 1',
+            name: 'Phase de Design',
+            start: '2023-10-01',
+            end: '2023-10-08',
+            progress: 50,
+            dependencies: ''
+        }
+    ];
+
+    let gantt;
+
+    // Initialisation du diagramme
+    function initGantt() {
+        gantt = new Gantt("#gantt", tasks, {
+            on_click: task => console.log(task),
+            on_date_change: (task, start, end) => {
+                console.log(task.name + " déplacé : ", start, end);
+            },
+            on_progress_change: (task, progress) => {
+                console.log(task.name + " progression : ", progress);
+            },
+            language: 'fr'
+        });
+    }
+
+    // Ajouter une tâche
+    function addTask() {
+        const name = document.getElementById('task-name').value;
+        const start = document.getElementById('task-start').value;
+        const end = document.getElementById('task-end').value;
+
+        if(!name) return alert("Nommez la tâche !");
+
+        const newTask = {
+            id: 'Task ' + (tasks.length + 1),
+            name: name,
+            start: start,
+            end: end,
+            progress: 0
+        };
+
+        tasks.push(newTask);
+        gantt.refresh(tasks);
+    }
+
+    // Changer la vue (Jour/Semaine/Mois)
+    function changeView(mode) {
+        gantt.change_view_mode(mode);
+    }
+
+    // Lancement au chargement
+    window.onload = initGantt;
+</script>
+
+</body>
+</html>
