@@ -3,38 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Gantt Simple</title>
-    <!-- On utilise Frappe Gantt pour la simplicité -->
+    <title>Gantt Ultra-Précis (Heures/Minutes)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; }
-        header { background: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
-        .controls { padding: 15px; background: white; border-bottom: 1px solid #ddd; display: flex; gap: 10px; flex-wrap: wrap; }
-        #gantt-container { background: white; margin: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
-        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; transition: 0.3s; }
-        .btn-add { background: #27ae60; color: white; }
-        .btn-view { background: #3498db; color: white; }
-        button:hover { opacity: 0.8; }
-        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; }
+        header { background: #1a73e8; color: white; padding: 1rem 2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .controls { 
+            padding: 20px; 
+            background: white; 
+            display: flex; 
+            gap: 15px; 
+            align-items: flex-end;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.85rem; color: #666; font-weight: bold; }
+
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #34a853; color: white; }
+        .btn-view { background: #ffffff; border: 1px solid #1a73e8; color: #1a73e8; }
+        .btn-view:hover { background: #1a73e8; color: white; }
+
+        #gantt-container { 
+            background: white; 
+            margin: 20px; 
+            padding: 10px;
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        /* Ajustement pour voir les détails des heures */
+        .gantt .grid-header { fill: #f9f9f9; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Créateur de Projet Rapide</h1>
-    <div id="project-info">Nouveau Projet</div>
+    <h1>Planificateur Précis</h1>
 </header>
 
 <div class="controls">
-    <input type="text" id="task-name" placeholder="Nom de la tâche">
-    <input type="date" id="task-start" value="2023-10-01">
-    <input type="date" id="task-end" value="2023-10-05">
-    <button class="btn-add" onclick="addTask()">+ Ajouter</button>
-    <div style="margin-left: auto;">
-        <button class="btn-view" onclick="changeView('Day')">Jour</button>
-        <button class="btn-view" onclick="changeView('Week')">Semaine</button>
-        <button class="btn-view" onclick="changeView('Month')">Mois</button>
+    <div class="input-group">
+        <label>Nom de la tâche</label>
+        <input type="text" id="task-name" placeholder="Ex: Réunion rapide">
+    </div>
+    <div class="input-group">
+        <label>Début (Date et Heure)</label>
+        <input type="datetime-local" id="task-start">
+    </div>
+    <div class="input-group">
+        <label>Fin (Date et Heure)</label>
+        <input type="datetime-local" id="task-end">
+    </div>
+    <button class="btn-add" onclick="addTask()">Ajouter la tâche</button>
+
+    <div style="margin-left: auto; display: flex; gap: 5px;">
+        <button class="btn-view" onclick="changeView('Hour')">Heures</button>
+        <button class="btn-view" onclick="changeView('Day')">Jours</button>
+        <button class="btn-view" onclick="changeView('Week')">Semaines</button>
     </div>
 </div>
 
@@ -43,44 +76,53 @@
 </div>
 
 <script>
-    // Données initiales
+    // Initialisation des dates par défaut (maintenant et dans 1 heure)
+    const now = new Date();
+    const inOneHour = new Date(now.getTime() + (60 * 60 * 1000));
+    
+    // Formatage pour l'input datetime-local (YYYY-MM-DDTHH:mm)
+    const formatDateForInput = (date) => date.toISOString().slice(0, 16);
+    
+    document.getElementById('task-start').value = formatDateForInput(now);
+    document.getElementById('task-end').value = formatDateForInput(inOneHour);
+
     let tasks = [
         {
-            id: 'Task 1',
-            name: 'Phase de Design',
-            start: '2023-10-01',
-            end: '2023-10-08',
-            progress: 50,
-            dependencies: ''
+            id: 'T1',
+            name: 'Configuration initiale',
+            start: formatDateForInput(now),
+            end: formatDateForInput(inOneHour),
+            progress: 20
         }
     ];
 
     let gantt;
 
-    // Initialisation du diagramme
     function initGantt() {
         gantt = new Gantt("#gantt", tasks, {
-            on_click: task => console.log(task),
+            view_mode: 'Hour', // Mode par défaut pour voir les minutes/heures
+            language: 'fr',
+            column_width: 60, // Largeur des colonnes pour les heures
             on_date_change: (task, start, end) => {
-                console.log(task.name + " déplacé : ", start, end);
-            },
-            on_progress_change: (task, progress) => {
-                console.log(task.name + " progression : ", progress);
-            },
-            language: 'fr'
+                console.log("Nouveaux horaires :", start, end);
+            }
         });
     }
 
-    // Ajouter une tâche
     function addTask() {
         const name = document.getElementById('task-name').value;
         const start = document.getElementById('task-start').value;
         const end = document.getElementById('task-end').value;
 
-        if(!name) return alert("Nommez la tâche !");
+        if(!name) return alert("Veuillez donner un nom à la tâche");
+        
+        // Vérification si la fin est bien après le début
+        if(new Date(end) <= new Date(start)) {
+            return alert("L'heure de fin doit être après l'heure de début !");
+        }
 
         const newTask = {
-            id: 'Task ' + (tasks.length + 1),
+            id: 'T' + (tasks.length + 1),
             name: name,
             start: start,
             end: end,
@@ -91,12 +133,10 @@
         gantt.refresh(tasks);
     }
 
-    // Changer la vue (Jour/Semaine/Mois)
     function changeView(mode) {
         gantt.change_view_mode(mode);
     }
 
-    // Lancement au chargement
     window.onload = initGantt;
 </script>
 
