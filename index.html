@@ -3,63 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gantt Précis - Vis.js Version</title>
+    <title>Gantt Pro - Colonne Latérale</title>
     
-    <!-- Vis.js Timeline CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-timeline/7.7.0/vis-timeline-graph2d.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-timeline/7.7.0/vis-timeline-graph2d.min.css">
 
     <style>
-        :root { --primary: #3498db; --danger: #e74c3c; --success: #2ecc71; --dark: #2c3e50; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f5f6fa; }
+        :root { --primary: #3498db; --danger: #e74c3c; --success: #2ecc71; --dark: #2c3e50; --border: #dcdde1; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: #f1f2f6; }
         
-        header { background: var(--dark); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 20px; max-width: 1400px; margin: auto; }
+        header { background: var(--dark); color: white; padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .container { padding: 20px; max-width: 1500px; margin: auto; }
 
         /* Formulaire */
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
         .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: flex-end; }
         .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.8rem; font-weight: bold; color: #666; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        label { font-size: 0.75rem; font-weight: bold; color: #57606f; text-transform: uppercase; }
+        input { padding: 10px; border: 1px solid var(--border); border-radius: 5px; outline: none; }
+        input:focus { border-color: var(--primary); }
         
         button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: var(--success); color: white; }
-        .btn-delete { background: var(--danger); color: white; margin-top: 10px; }
+        .btn-delete { background: var(--danger); color: white; font-size: 13px; }
+        
+        /* Personnalisation du Gantt */
+        #visualization { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
 
-        /* Style spécifique pour le Gantt */
-        #visualization { 
-            background: white; 
-            border-radius: 8px; 
-            border: 1px solid #ddd; 
-            min-height: 400px;
-        }
-
-        /* Couleurs des barres */
-        .vis-item { border-color: #2980b9; background-color: #3498db; color: white; border-radius: 4px; font-size: 13px; }
-        .vis-item.vis-selected { background-color: #f1c40f; border-color: #f39c12; color: black; }
-        .vis-item.pause { background-color: #95a5a6; border-color: #7f8c8d; }
-
-        .help-text { font-size: 0.9rem; color: #7f8c8d; margin-top: 10px; }
+        /* Style de la colonne de gauche (Labels) */
+        .vis-label { border-bottom: 1px solid #eee !important; background: #f9f9fb; font-weight: 600; color: #2f3542; }
+        .vis-inner { padding: 10px !important; }
+        
+        /* Style des barres */
+        .vis-item { border-radius: 4px; border-width: 2px; font-weight: 500; }
+        .vis-item.vis-range { background-color: rgba(52, 152, 219, 0.2); border-color: var(--primary); color: #2980b9; }
+        .vis-item.pause { background-color: rgba(149, 165, 166, 0.2); border-color: #7f8c8d; color: #7f8c8d; }
+        
+        /* Suppression */
+        #selection-box { display: none; background: #fff3cd; padding: 10px 20px; border-radius: 5px; border: 1px solid #ffeeba; margin-bottom: 15px; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">Planificateur Expert</h2>
-    <div>
-        <span id="selected-task-info">Sélectionnez une tâche pour la supprimer</span>
-        <button class="btn-delete" id="delete-btn" style="display:none;" onclick="deleteSelected()">Supprimer</button>
-    </div>
+    <h2 style="margin:0">Gantt de Production</h2>
+    <div style="font-size: 0.9rem; opacity: 0.8;">Utilisez la molette pour zoomer sur les minutes</div>
 </header>
 
 <div class="container">
-    <!-- Ajout de tâche -->
+    <!-- Barre de suppression (cachée par défaut) -->
+    <div id="selection-box">
+        <span id="selected-text">Tâche sélectionnée</span>
+        <button class="btn-delete" onclick="deleteSelected()">Supprimer la tâche</button>
+    </div>
+
+    <!-- Formulaire d'ajout -->
     <div class="card">
         <div class="grid-form">
             <div class="input-group">
                 <label>Nom de la tâche</label>
-                <input type="text" id="task-name" placeholder="ex: Test Wifi">
+                <input type="text" id="task-name" placeholder="Ex: T11: Nouvelle tâche">
             </div>
             <div class="input-group">
                 <label>Début</label>
@@ -69,66 +72,82 @@
                 <label>Fin</label>
                 <input type="datetime-local" id="task-end">
             </div>
-            <button class="btn-add" onclick="addTask()">Ajouter la tâche</button>
+            <button class="btn-add" onclick="addTask()">+ Créer la tâche</button>
         </div>
-        <p class="help-text">💡 <b>Astuce :</b> Vous pouvez glisser les barres ou étirer leurs bords directement sur le graphique.</p>
     </div>
 
-    <!-- Graphique Gantt (Timeline) -->
+    <!-- Le Graphique -->
     <div id="visualization"></div>
 </div>
 
 <script>
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Données par défaut (Format Vis.js : content, start, end)
-    let items = new vis.DataSet([
-        { id: 1, content: "T1: Installer l'environnement (IDE)", start: today + ' 10:30:00', end: today + ' 10:45:00' },
-        { id: 2, content: "T2: Créer projet IDE (P1)", start: today + ' 10:45:00', end: today + ' 11:00:00' },
-        { id: 3, content: "PAUSE DÉJEUNER / INTERRUPTION", start: today + ' 11:00:00', end: today + ' 13:30:00', className: 'pause' },
-        { id: 4, content: "T2: Créer projet IDE (Fin)", start: today + ' 13:30:00', end: today + ' 13:35:00' },
-        { id: 5, content: "T3: Installer bibliothèques", start: today + ' 13:35:00', end: today + ' 13:55:00' },
-        { id: 6, content: "T4: Test OLED SSD1306", start: today + ' 13:55:00', end: today + ' 14:25:00' },
-        { id: 7, content: "T5: Test capteur AHT20", start: today + ' 14:25:00', end: today + ' 14:55:00' },
-        { id: 8, content: "T6: Test connexion Wifi", start: today + ' 14:55:00', end: today + ' 15:20:00' },
-        { id: 9, content: "T7: Test SQL (13306)", start: today + ' 15:20:00', end: today + ' 15:55:00' },
-        { id: 10, content: "T8: Concevoir l'algorithme", start: today + ' 15:55:00', end: today + ' 16:40:00' },
-        { id: 11, content: "T9: Requête SQL insertion", start: today + ' 16:40:00', end: today + ' 17:00:00' },
-        { id: 12, content: "T10: Test d’intégration final", start: today + ' 17:00:00', end: today + ' 17:40:00' }
+    // 1. Définition des Groupes (La colonne de gauche)
+    let groups = new vis.DataSet([
+        {id: 1, content: "T1: Environnement IDE"},
+        {id: 2, content: "T2a: Projet IDE (P1)"},
+        {id: 3, content: "PAUSE / INTERRUPTION"},
+        {id: 4, content: "T2b: Projet IDE (Fin)"},
+        {id: 5, content: "T3: Bibliothèques"},
+        {id: 6, content: "T4: Test OLED"},
+        {id: 7, content: "T5: Test AHT20"},
+        {id: 8, content: "T6: Test Wifi"},
+        {id: 9, content: "T7: Test SQL (13306)"},
+        {id: 10, content: "T8: Algorithme"},
+        {id: 11, content: "T9: Requête SQL"},
+        {id: 12, content: "T10: Intégration Final"}
     ]);
 
-    // 2. Configuration du graphique
+    // 2. Définition des Items (Les barres sur la timeline)
+    // Chaque item est lié à un groupe par l'id 'group'
+    let items = new vis.DataSet([
+        { id: 1, group: 1, content: "15 min", start: today + ' 10:30:00', end: today + ' 10:45:00' },
+        { id: 2, group: 2, content: "15 min", start: today + ' 10:45:00', end: today + ' 11:00:00' },
+        { id: 3, group: 3, content: "Pause déjeuner", start: today + ' 11:00:00', end: today + ' 13:30:00', className: 'pause' },
+        { id: 4, group: 4, content: "5 min", start: today + ' 13:30:00', end: today + ' 13:35:00' },
+        { id: 5, group: 5, content: "20 min", start: today + ' 13:35:00', end: today + ' 13:55:00' },
+        { id: 6, group: 6, content: "30 min", start: today + ' 13:55:00', end: today + ' 14:25:00' },
+        { id: 7, group: 7, content: "30 min", start: today + ' 14:25:00', end: today + ' 14:55:00' },
+        { id: 8, group: 8, content: "25 min", start: today + ' 14:55:00', end: today + ' 15:20:00' },
+        { id: 9, group: 9, content: "35 min", start: today + ' 15:20:00', end: today + ' 15:55:00' },
+        { id: 10, group: 10, content: "45 min", start: today + ' 15:55:00', end: today + ' 16:40:00' },
+        { id: 11, group: 11, content: "20 min", start: today + ' 16:40:00', end: today + ' 17:00:00' },
+        { id: 12, group: 12, content: "40 min", start: today + ' 17:00:00', end: today + ' 17:40:00' }
+    ]);
+
+    // 3. Configuration du graphique
     const container = document.getElementById('visualization');
     const options = {
         locale: 'fr',
-        stack: true, // Empiler les tâches si elles se chevauchent
-        editable: true, // Autorise le drag-and-drop et le resize
-        margin: { item: 10, axis: 5 },
-        orientation: 'top',
+        editable: true,
+        groupEditable: true, // Permet de réorganiser les lignes
         start: today + ' 09:00:00',
         end: today + ' 19:00:00',
-        format: {
-            minorLabels: { minute: 'HH:mm', hour: 'HH:mm' }
+        horizontalScroll: true,
+        zoomKey: 'ctrlKey', // Zoom seulement avec Ctrl + Molette pour éviter les erreurs
+        orientation: 'top',
+        groupTemplate: function(group) { // Template pour le nom des lignes
+            return '<div class="vis-inner">' + group.content + '</div>';
         }
     };
 
-    // 3. Création du Timeline
-    const timeline = new vis.Timeline(container, items, options);
+    // 4. Création du Gantt
+    const timeline = new vis.Timeline(container, items, groups, options);
 
-    // 4. Gestion de la sélection (pour supprimer)
+    // 5. Interaction : Sélection pour supprimer
     timeline.on('select', function (properties) {
-        const deleteBtn = document.getElementById('delete-btn');
-        const info = document.getElementById('selected-task-info');
+        const selectionBox = document.getElementById('selection-box');
         if (properties.items.length > 0) {
-            deleteBtn.style.display = 'inline-block';
-            info.innerText = "Tâche sélectionnée ";
+            selectionBox.style.display = 'flex';
+            const itemData = items.get(properties.items[0]);
+            document.getElementById('selected-text').innerText = "Tâche sélectionnée : " + groups.get(itemData.group).content;
         } else {
-            deleteBtn.style.display = 'none';
-            info.innerText = "Sélectionnez une tâche pour la supprimer";
+            selectionBox.style.display = 'none';
         }
     });
 
-    // 5. Fonction pour ajouter une tâche
+    // 6. Ajouter une nouvelle ligne et une nouvelle tâche
     function addTask() {
         const name = document.getElementById('task-name').value;
         const start = document.getElementById('task-start').value;
@@ -136,36 +155,37 @@
 
         if(!name || !start || !end) return alert("Veuillez remplir tous les champs");
 
-        try {
-            items.add({
-                id: Date.now(), // ID unique
-                content: name,
-                start: start,
-                end: end
-            });
-            // Zoomer sur la nouvelle tâche
-            timeline.setSelection(Date.now(), {focus: true});
-        } catch (err) {
-            alert("Erreur lors de l'ajout. Vérifiez les dates.");
-        }
+        const newId = Date.now();
+        
+        // On crée un nouveau groupe (ligne)
+        groups.add({ id: newId, content: name });
+        
+        // On crée l'item correspondant
+        items.add({
+            id: newId,
+            group: newId,
+            content: "Nouvelle",
+            start: start,
+            end: end
+        });
     }
 
-    // 6. Fonction pour supprimer
+    // 7. Supprimer
     function deleteSelected() {
         const selection = timeline.getSelection();
         if (selection.length > 0) {
+            const itemToDelete = items.get(selection[0]);
             items.remove(selection[0]);
-            document.getElementById('delete-btn').style.display = 'none';
-            document.getElementById('selected-task-info').innerText = "Sélectionnez une tâche pour la supprimer";
+            groups.remove(itemToDelete.group);
+            document.getElementById('selection-box').style.display = 'none';
         }
     }
 
-    // Pré-remplir les inputs avec l'heure actuelle
+    // Init dates formulaire
     window.onload = () => {
         const now = new Date();
-        const future = new Date(now.getTime() + 30 * 60000);
         document.getElementById('task-start').value = now.toISOString().slice(0, 16);
-        document.getElementById('task-end').value = future.toISOString().slice(0, 16);
+        document.getElementById('task-end').value = new Date(now.getTime() + 30*60000).toISOString().slice(0, 16);
     };
 </script>
 
