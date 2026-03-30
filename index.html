@@ -3,64 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gantt Heures Fixé</title>
-    <!-- On utilise une version stable de Frappe Gantt -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
+    <title>Gantt Précis - Vis.js Version</title>
+    
+    <!-- Vis.js Timeline CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-timeline/7.7.0/vis-timeline-graph2d.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-timeline/7.7.0/vis-timeline-graph2d.min.css">
+
     <style>
-        :root { --primary: #3498db; --danger: #e74c3c; --success: #27ae60; --dark: #2c3e50; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8f9fa; }
+        :root { --primary: #3498db; --danger: #e74c3c; --success: #2ecc71; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f5f6fa; }
         
         header { background: var(--dark); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 20px; max-width: 1300px; margin: auto; }
+        .container { padding: 20px; max-width: 1400px; margin: auto; }
 
+        /* Formulaire */
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: flex-end; }
-        
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: flex-end; }
         .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.75rem; font-weight: bold; color: #666; text-transform: uppercase; }
-        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-
-        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
-        .btn-add { background: var(--success); color: white; }
-        .btn-delete { background: var(--danger); color: white; padding: 4px 8px; font-size: 0.7rem; }
+        label { font-size: 0.8rem; font-weight: bold; color: #666; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         
-        /* Conteneur du Gantt avec scroll */
-        #gantt-outer { 
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: var(--success); color: white; }
+        .btn-delete { background: var(--danger); color: white; margin-top: 10px; }
+
+        /* Style spécifique pour le Gantt */
+        #visualization { 
             background: white; 
             border-radius: 8px; 
             border: 1px solid #ddd; 
-            overflow-x: auto; /* Scroll horizontal impératif */
-            min-height: 450px;
+            min-height: 400px;
         }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-        th { background: #f4f7f6; }
+        /* Couleurs des barres */
+        .vis-item { border-color: #2980b9; background-color: #3498db; color: white; border-radius: 4px; font-size: 13px; }
+        .vis-item.vis-selected { background-color: #f1c40f; border-color: #f39c12; color: black; }
+        .vis-item.pause { background-color: #95a5a6; border-color: #7f8c8d; }
 
-        .view-controls button { background: #eee; margin-left: 5px; border: 1px solid #ccc; }
-        .view-controls button.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* Style pour la barre de pause */
-        .bar-pause .bar { fill: #bdc3c7 !important; }
+        .help-text { font-size: 0.9rem; color: #7f8c8d; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">Planning de Production</h2>
-    <div class="view-controls">
-        <button id="btn-hour" class="active" onclick="changeView('Hour', this)">Heures</button>
-        <button id="btn-day" onclick="changeView('Day', this)">Jours</button>
+    <h2 style="margin:0">Planificateur Expert</h2>
+    <div>
+        <span id="selected-task-info">Sélectionnez une tâche pour la supprimer</span>
+        <button class="btn-delete" id="delete-btn" style="display:none;" onclick="deleteSelected()">Supprimer</button>
     </div>
 </header>
 
 <div class="container">
+    <!-- Ajout de tâche -->
     <div class="card">
         <div class="grid-form">
             <div class="input-group">
                 <label>Nom de la tâche</label>
-                <input type="text" id="task-name" placeholder="Titre...">
+                <input type="text" id="task-name" placeholder="ex: Test Wifi">
             </div>
             <div class="input-group">
                 <label>Début</label>
@@ -70,124 +69,104 @@
                 <label>Fin</label>
                 <input type="datetime-local" id="task-end">
             </div>
-            <button class="btn-add" onclick="addTask()">+ Ajouter</button>
+            <button class="btn-add" onclick="addTask()">Ajouter la tâche</button>
         </div>
+        <p class="help-text">💡 <b>Astuce :</b> Vous pouvez glisser les barres ou étirer leurs bords directement sur le graphique.</p>
     </div>
 
-    <div id="gantt-outer">
-        <svg id="gantt"></svg>
-    </div>
-
-    <div class="card">
-        <h3>Liste des tâches</h3>
-        <table id="task-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Tâche</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <!-- Graphique Gantt (Timeline) -->
+    <div id="visualization"></div>
 </div>
 
 <script>
     const today = new Date().toISOString().split('T')[0];
-    
-    // Données avec format de date strict YYYY-MM-DD HH:mm
-    let tasks = [
-        { id: "T1", name: "Installer l'environnement (IDE)", start: today + " 10:30", end: today + " 10:45", progress: 100 },
-        { id: "T2a", name: "Créer le projet IDE (P1)", start: today + " 10:45", end: today + " 11:00", progress: 100 },
-        { id: "PAUSE", name: "PAUSE DÉJEUNER", start: today + " 11:00", end: today + " 13:30", progress: 0, custom_class: "bar-pause" },
-        { id: "T2b", name: "Créer le projet IDE (Fin)", start: today + " 13:30", end: today + " 13:35", progress: 0 },
-        { id: "T3", name: "Installer les bibliothèques", start: today + " 13:35", end: today + " 13:55", progress: 0 },
-        { id: "T4", name: "Test OLED SSD1306", start: today + " 13:55", end: today + " 14:25", progress: 0 },
-        { id: "T5", name: "Test capteur AHT20", start: today + " 14:25", end: today + " 14:55", progress: 0 },
-        { id: "T6", name: "Test connexion Wifi", start: today + " 14:55", end: today + " 15:20", progress: 0 },
-        { id: "T7", name: "Test SQL (13306)", start: today + " 15:20", end: today + " 15:55", progress: 0 },
-        { id: "T8", name: "Concevoir l’algorithme", start: today + " 15:55", end: today + " 16:40", progress: 0 },
-        { id: "T9", name: "Requête SQL insertion", start: today + " 16:40", end: today + " 17:00", progress: 0 },
-        { id: "T10", name: "Test d’intégration final", start: today + " 17:00", end: today + " 17:40", progress: 0 }
-    ];
 
-    let gantt_chart;
+    // 1. Données par défaut (Format Vis.js : content, start, end)
+    let items = new vis.DataSet([
+        { id: 1, content: "T1: Installer l'environnement (IDE)", start: today + ' 10:30:00', end: today + ' 10:45:00' },
+        { id: 2, content: "T2: Créer projet IDE (P1)", start: today + ' 10:45:00', end: today + ' 11:00:00' },
+        { id: 3, content: "PAUSE DÉJEUNER / INTERRUPTION", start: today + ' 11:00:00', end: today + ' 13:30:00', className: 'pause' },
+        { id: 4, content: "T2: Créer projet IDE (Fin)", start: today + ' 13:30:00', end: today + ' 13:35:00' },
+        { id: 5, content: "T3: Installer bibliothèques", start: today + ' 13:35:00', end: today + ' 13:55:00' },
+        { id: 6, content: "T4: Test OLED SSD1306", start: today + ' 13:55:00', end: today + ' 14:25:00' },
+        { id: 7, content: "T5: Test capteur AHT20", start: today + ' 14:25:00', end: today + ' 14:55:00' },
+        { id: 8, content: "T6: Test connexion Wifi", start: today + ' 14:55:00', end: today + ' 15:20:00' },
+        { id: 9, content: "T7: Test SQL (13306)", start: today + ' 15:20:00', end: today + ' 15:55:00' },
+        { id: 10, content: "T8: Concevoir l'algorithme", start: today + ' 15:55:00', end: today + ' 16:40:00' },
+        { id: 11, content: "T9: Requête SQL insertion", start: today + ' 16:40:00', end: today + ' 17:00:00' },
+        { id: 12, content: "T10: Test d’intégration final", start: today + ' 17:00:00', end: today + ' 17:40:00' }
+    ]);
 
-    function initGantt() {
-        // Initialisation
-        gantt_chart = new Gantt("#gantt", tasks, {
-            header_height: 50,
-            column_width: 100, // Largeur importante pour voir les heures
-            view_mode: 'Hour',
-            language: 'fr',
-            custom_popup_html: function(task) {
-                return `<div style="padding:10px; width:200px">
-                            <strong>${task.name}</strong>
-                            <p>De ${task.start.split(' ')[1]} à ${task.end.split(' ')[1]}</p>
-                        </div>`;
-            }
-        });
+    // 2. Configuration du graphique
+    const container = document.getElementById('visualization');
+    const options = {
+        locale: 'fr',
+        stack: true, // Empiler les tâches si elles se chevauchent
+        editable: true, // Autorise le drag-and-drop et le resize
+        margin: { item: 10, axis: 5 },
+        orientation: 'top',
+        start: today + ' 09:00:00',
+        end: today + ' 19:00:00',
+        format: {
+            minorLabels: { minute: 'HH:mm', hour: 'HH:mm' }
+        }
+    };
 
-        // ASTUCE : On force le mode heure après un mini délai pour corriger le bug d'affichage
-        setTimeout(() => {
-            gantt_chart.change_view_mode('Hour');
-            updateTable();
-        }, 100);
+    // 3. Création du Timeline
+    const timeline = new vis.Timeline(container, items, options);
 
-        // Dates par défaut dans le formulaire
-        document.getElementById('task-start').value = today + "T17:40";
-        document.getElementById('task-end').value = today + "T18:10";
-    }
+    // 4. Gestion de la sélection (pour supprimer)
+    timeline.on('select', function (properties) {
+        const deleteBtn = document.getElementById('delete-btn');
+        const info = document.getElementById('selected-task-info');
+        if (properties.items.length > 0) {
+            deleteBtn.style.display = 'inline-block';
+            info.innerText = "Tâche sélectionnée ";
+        } else {
+            deleteBtn.style.display = 'none';
+            info.innerText = "Sélectionnez une tâche pour la supprimer";
+        }
+    });
 
+    // 5. Fonction pour ajouter une tâche
     function addTask() {
         const name = document.getElementById('task-name').value;
-        const start = document.getElementById('task-start').value.replace('T', ' ');
-        const end = document.getElementById('task-end').value.replace('T', ' ');
+        const start = document.getElementById('task-start').value;
+        const end = document.getElementById('task-end').value;
 
-        if(!name || !start || !end) return alert("Champs incomplets");
+        if(!name || !start || !end) return alert("Veuillez remplir tous les champs");
 
-        tasks.push({
-            id: "T" + Date.now(),
-            name: name,
-            start: start,
-            end: end,
-            progress: 0
-        });
-
-        gantt_chart.refresh(tasks);
-        updateTable();
+        try {
+            items.add({
+                id: Date.now(), // ID unique
+                content: name,
+                start: start,
+                end: end
+            });
+            // Zoomer sur la nouvelle tâche
+            timeline.setSelection(Date.now(), {focus: true});
+        } catch (err) {
+            alert("Erreur lors de l'ajout. Vérifiez les dates.");
+        }
     }
 
-    function deleteTask(id) {
-        tasks = tasks.filter(t => t.id !== id);
-        gantt_chart.refresh(tasks);
-        updateTable();
+    // 6. Fonction pour supprimer
+    function deleteSelected() {
+        const selection = timeline.getSelection();
+        if (selection.length > 0) {
+            items.remove(selection[0]);
+            document.getElementById('delete-btn').style.display = 'none';
+            document.getElementById('selected-task-info').innerText = "Sélectionnez une tâche pour la supprimer";
+        }
     }
 
-    function updateTable() {
-        const tbody = document.querySelector("#task-table tbody");
-        tbody.innerHTML = "";
-        tasks.forEach(t => {
-            tbody.innerHTML += `<tr>
-                <td>${t.id}</td>
-                <td>${t.name}</td>
-                <td>${t.start}</td>
-                <td>${t.end}</td>
-                <td><button class="btn-delete" onclick="deleteTask('${t.id}')">Supprimer</button></td>
-            </tr>`;
-        });
-    }
-
-    function changeView(mode, btn) {
-        document.querySelectorAll('.view-controls button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        gantt_chart.change_view_mode(mode);
-    }
-
-    window.onload = initGantt;
+    // Pré-remplir les inputs avec l'heure actuelle
+    window.onload = () => {
+        const now = new Date();
+        const future = new Date(now.getTime() + 30 * 60000);
+        document.getElementById('task-start').value = now.toISOString().slice(0, 16);
+        document.getElementById('task-end').value = future.toISOString().slice(0, 16);
+    };
 </script>
 
 </body>
